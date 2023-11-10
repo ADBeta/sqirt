@@ -84,6 +84,9 @@ int main(int argc, char *argv[])
 	ArgDef_t *wait_ptr = Clam_AddDefinition(CLAM_TSTRING, "-wt");
 	ArgDef_t *time_ptr = Clam_AddDefinition(CLAM_TSTRING, "-to");
 	
+	
+	ArgDef_t *buff_ptr = Clam_AddDefinition(CLAM_TSTRING, "-bs");
+	
 	//Arguments that set a detected flag
 	ArgDef_t *nlin_ptr = Clam_AddDefinition(CLAM_TFLAG, "-nl");
 	
@@ -174,13 +177,30 @@ int main(int argc, char *argv[])
 		
 		//Otherwsie set the configuration value. Cast to uint8_t
 		conf_timeout = (uint8_t)strval;
-		printf("value: %i\n", conf_timeout); //TODO
 	}
 	
 	
 	//Bit Length
 	
 	//Buffer Size
+	if(buff_ptr->detected)
+	{
+		long strval = 0;
+		const char *arg = buff_ptr->arg_str;
+		int ret = GetNumericLimitedFromArg(arg, &strval, 255);
+		
+		//If any error has occured, print a message and exit (also check if 
+		//value is negative)
+		if(strval < 0) ret = -2;
+		if(ret != 0)
+		{
+			if(ret == -1) PrintErrorAndExit("Buffer Size", invalid_num_str, arg);
+			if(ret == -2) PrintErrorAndExit("Buffer Size", out_of_range, arg);
+		}
+		
+		//Otherwsie set the configuration value. Cast to uint8_t
+		conf_buffersize = (uint8_t)strval;
+	}
 	
 	/*** Communicate with Termios library *************************************/
 	int ser_err;
@@ -217,7 +237,7 @@ int main(int argc, char *argv[])
 	//TODO
 	printf("Waiting for %i\n", conf_wait);
 	
-	
+	sleep(2);
 	
 	/*** Write/Read from the Serial Device ************************************/
 	//Write the message given to the PORT. Append newline if -nl is detected
