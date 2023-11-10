@@ -1,104 +1,78 @@
 /*******************************************************************************
 * Serial handler - Manages and configures the termios terminal device
-* ADBeta (c)2023
+* This library is intended for use in desktop, embedded and many other projects
+* Please see the GitHub for more information:
+*
+* PLEASE NOTE: Most API functions of this library return errno values.
+* (c) ADBeta    Version 1.1.0    03 Nov 2023
 *******************************************************************************/
 #include <termios.h>
 #include <fcntl.h> 
 #include <unistd.h>
-
 #include <errno.h>
-#include <string.h>
-
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "serial.h"
 
-int ser_open_device(char *filename, serial_device_t *dev)
+int Ser_OpenDevice(const char *filename, SerialDevice *dev)
 {
 	dev->filename = filename;
 	//Open the given filename (Serial Port name) as read/write tty, with sync
 	dev->filedesc = open(dev->filename, O_RDWR | O_NOCTTY | O_SYNC);
 	
 	//Make sure the file opened correctly
-	if(dev->filedesc < 0)
-	{
-		printf("Error Opening %s: %s\n", dev->filename, strerror(errno));
-		return 1;
-	}
+	if(dev->filedesc < 0) return errno;
 	
-	return ser_get_attr(dev);
+	//Pre-load the attributes for the device. Returns its return value
+	return Ser_GetAttr(dev);
 }
 
-int ser_write_buffer(const char *buff, const unsigned int len,
-                     serial_device_t *dev)
+int Ser_CloseDevice(SerialDevice *dev)
 {
-	int ret = write(dev->filedesc, buff, len);
-	if(ret < 0)
-	{
-		printf("Error Writing to Serial Device: %s\n", strerror(errno));
-	}
-	
-	return ret;
+	close(dev->filedesc);
+	return errno;
 }
 
-int ser_read_buffer(char *buff, const unsigned int len, serial_device_t *dev)
+int Ser_WriteBuffer(const char *buff, const size_t len, SerialDevice *dev)
 {
-	int ret = read(dev->filedesc, buff, len);
-	if(ret < 0)
-	{
-		printf("Error Reading from Serial Device: %s\n", strerror(errno));
-	}
-	
-	return ret;
+	write(dev->filedesc, buff, len);
+	return errno;
+}
+
+int Ser_ReadBuffer(char *buff, const size_t len, SerialDevice *dev)
+{
+	read(dev->filedesc, buff, len);
+	return errno;
 }
 
 /*** Serial Setings & variable handling ***************************************/
-int ser_get_attr(serial_device_t *dev)
+int Ser_GetAttr(SerialDevice *dev)
 {
-	int ret = tcgetattr(dev->filedesc, &dev->terminal); 
-	if(ret != 0) 
-	{
-		printf("Error getting terminal attributes: %s\n", strerror(errno));
-	}
-	
-	return ret;
+	tcgetattr(dev->filedesc, &dev->terminal); 
+	return errno;
 }
 
-int ser_set_attr(serial_device_t *dev)
+int Ser_SetAttr(SerialDevice *dev)
 {
 	//Force an attribute update now
-	int ret = tcsetattr(dev->filedesc, TCSANOW, &dev->terminal);
-	if(ret != 0)
-	{
-		printf("Error setting terminal attributes: %s\n", strerror(errno));
-	}
-	
-	return ret;
+	tcsetattr(dev->filedesc, TCSANOW, &dev->terminal);
+	return errno;
 }
 
-int ser_set_baud(const int baud, serial_device_t *dev)
+int Ser_SetBaud(const unsigned int baud, SerialDevice *dev)
 {
-	if(cfsetospeed(&dev->terminal, baud) != 0)
-	{
-		printf("Error setting output baudrate: %s\n", strerror(errno));
-		return -1;
-	}
+	if(cfsetospeed(&dev->terminal, baud) != 0) return errno;
+	if(cfsetispeed(&dev->terminal, baud) != 0) return errno;
 	
-	if(cfsetispeed(&dev->terminal, baud) != 0)
-	{
-		printf("Error setting input baudrate: %s\n", strerror(errno));
-		return -1;
-	}
-	
-	return ser_set_attr(dev);
+	return Ser_SetAttr(dev);
 }
 
-int ser_set_bits(const int bits, serial_device_t *dev)
+int Ser_SetBits(const unsigned int bits, SerialDevice *dev)
 {
 	//Unset all bitlength flags
-	dev->terminal.c_cflag &= ~(CS5 | CS6 | CS7 | CS8);
+	dev->terminal.c_cflag &= ~(tcflag_t)(CS5 | CS6 | CS7 | CS8);
 
 	switch(bits)
 	{
@@ -116,93 +90,92 @@ int ser_set_bits(const int bits, serial_device_t *dev)
 			break;
 		
 		default:
-			printf("Error in ser_set_bits: Input not a valid baud speed\n");
-			return -2;
+			return EINVAL;
 	}
 	
-	return ser_set_attr(dev);
+	return Ser_SetAttr(dev);
 }
 
-int ser_set_vmin(const uint8_t bytes, serial_device_t *dev)
+int Ser_SetVmin(const uint8_t bytes, SerialDevice *dev)
 {
 	dev->terminal.c_cc[VMIN] = bytes;
-	return ser_set_attr(dev);	
+	return Ser_SetAttr(dev);	
 }
 
-int ser_set_vtime(const uint8_t time, serial_device_t *dev)
+int Ser_SetVtime(const uint8_t time, SerialDevice *dev)
 {
 	dev->terminal.c_cc[VTIME] = time;
-	return ser_set_attr(dev);
+	return Ser_SetAttr(dev);
 }
 
-int ser_enable_software_control(const bool en, serial_device_t *dev)
+int Ser_EnableSoftwareControl(const bool en, SerialDevice *dev)
 {
 	if(en == true)
 	{
 		dev->terminal.c_iflag |= (IXON | IXOFF | IXANY);
 	} else {
-		dev->terminal.c_iflag &= ~(IXON | IXOFF | IXANY);
+		dev->terminal.c_iflag &= ~(tcflag_t)(IXON | IXOFF | IXANY);
 	}
 	
-	return ser_set_attr(dev);
+	return Ser_SetAttr(dev);
 }
 
-int ser_enable_hardware_control(const bool en, serial_device_t *dev)
+int Ser_EnableHardwareControl(const bool en, SerialDevice *dev)
 {
 	if(en == true)
 	{
 		dev->terminal.c_cflag |= CRTSCTS;
-		dev->terminal.c_cflag &= ~CLOCAL;
+		dev->terminal.c_cflag &= ~(tcflag_t)CLOCAL;
 	} else {
-		dev->terminal.c_cflag &= ~CRTSCTS;
+		dev->terminal.c_cflag &= ~(tcflag_t)CRTSCTS;
 		dev->terminal.c_cflag |= CLOCAL;
 	}
 	
-	return ser_set_attr(dev);
+	return Ser_SetAttr(dev);
 }
 
-int ser_two_stop_bit(const bool en, serial_device_t *dev)
+int Ser_TwoStopBit(const bool en, SerialDevice *dev)
 {
 	if(en == true)
 	{
-		dev->terminal.c_cflag |= CSTOPB;
+		dev->terminal.c_cflag |= (tcflag_t)CSTOPB;
 	} else {
-		dev->terminal.c_cflag &= ~CSTOPB;
+		dev->terminal.c_cflag &= ~(tcflag_t)CSTOPB;
 	}
 	
-	return ser_set_attr(dev);
+	return Ser_SetAttr(dev);
 }
 
-int ser_enable_read(const bool en, serial_device_t *dev)
+int Ser_EnableRead(const bool en, SerialDevice *dev)
 {
 	if(en == true)
 	{
 		dev->terminal.c_cflag |= CREAD;
 	} else {
-		dev->terminal.c_cflag &= ~CREAD;
+		dev->terminal.c_cflag &= ~(tcflag_t)CREAD;
 	}
 	
-	return ser_set_attr(dev);
+	return Ser_SetAttr(dev);
 }
 
-int ser_ignore_break(const bool en, serial_device_t *dev)
+int Ser_IgnoreBreak(const bool en, SerialDevice *dev)
 {
 	if(en == true)
 	{
 		dev->terminal.c_iflag |= IGNBRK;
 	} else {
-		dev->terminal.c_iflag &= ~IGNBRK;
+		dev->terminal.c_iflag &= ~(tcflag_t)IGNBRK;
 	}
 	
-	return ser_set_attr(dev);
+	return Ser_SetAttr(dev);
 }
 
-int ser_set_parity(const bool odd, const bool even, serial_device_t *dev)
+int Ser_SetParity(const bool odd, const bool even, SerialDevice *dev)
 {
-	dev->terminal.c_cflag &= ~(PARODD  | PARENB);
+	dev->terminal.c_cflag &= ~(tcflag_t)(PARODD  | PARENB);
 	
 	dev->terminal.c_cflag |= (PARODD * odd);
 	dev->terminal.c_cflag |= (PARENB * even);
 	
-	return ser_set_attr(dev);
+	return Ser_SetAttr(dev);
 }

@@ -4,7 +4,7 @@ OBJ_DIR := obj
 BIN_DIR := bin
 
 #TARGET
-TARGET := $(BIN_DIR)/sqrt
+TARGET := $(BIN_DIR)/sqirt
 
 #Source files
 SRCS := $(wildcard $(SRC_DIR)/*.c)
@@ -16,7 +16,7 @@ CC := gcc
 
 #Flags
 CPPFLAGS := -Iinclude
-CFLAGS   := -Wall
+CFLAGS   := -Wall -Wextra -Wsign-conversion -Wmissing-declarations -Wconversion -Wshadow -Wlogical-op -Waggregate-return -Wfloat-equal -Wsuggest-attribute=const -Wunused -Wuninitialized -Wformat -Wunused-result -Wtype-limits
 #LDFLAGS  := -Llib
 LDLIBS   := -lm #/usr/lib/ 
 
