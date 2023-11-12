@@ -1,5 +1,5 @@
 /*******************************************************************************
-* This file is part of sqirt: Serial Query Response Tool TODO
+* This file is part of sqirt: Serial Query Interchange Response Tool TODO
 * A simple program to send a request to a Serial Device, and return the response
 * string back to the user
 * Specifically designed for desktop and embedded environments
@@ -40,20 +40,21 @@ Sends a message to a Serial PORT, then echos its reponse to stdout\n\n\
 Basic Usage: sqirt -p [port] -m [message] [OPTIONAL]\n\
 Example: sqirt -p /dev/ttyUSB0 -m \"Hello World!\" -nl\n\n\
 Arguments:\n\
-  -p\tWhich PORT to communicate with (REQUIRED)\n\
-  -m\tMessage to send to PORT. Use \"\" for messages with spaces or \'\' for special characters (REQUIRED)\n\
+  -p\tWhich PORT to use (REQUIRED)\n\
+  -m\tMessage to send. Use \"\" or \'\' for spaces or special characters (REQUIRED)\n\
 \n\
-  -br\tBaudrate to use. Valid Options: 2400, 4800, 9600, 19200, 38400, 115200 (Default: 115200)\n\
-  -wt\tHow long to wait before writing to PORT (0.1 sec increments. Some devices reset when PORT is opened. Valid Options: 0-1000) (Default: 0)\n\
+  -br\tBaudrate. Valid Options: 2400, 4800, 9600, 19200, 38400, 115200 (Default: 115200)\n\
+  -td\tDelay before Transmitting to PORT. Valid Options: 0-1000 (0.1 sec increments) (Default: 0)\n\
+  -rd\tDelay before Receiving the response from PORT. Valid Options: 0-255 (0.1 sec increments) (Default:  5)\n\
   -to\tTimeout for the PORT to respond. Valid Options: 0-255 (0.1 sec increments) (Default: 5)\n\
-  -bl\tBit Length the PORT uses to communicate. Valid Options: 5, 6, 7, 8 (Default: 8)\n\
+  -bl\tBit Length of the PORT. Valid Options: 5, 6, 7, 8 (Default: 8)\n\
   -bs\tBuffer Size of the response string (Default: 256)\n\
+  -fi\nTransmit a file instead of a message (TODO)\n\
 \nFlags:\n\
   -nl\tAppends NewLine (\"\\r\\n\") to the message automatically\n\
-  -h\tShow this help message\
-\n\nSee the GitHub for More Information and bug fixes <https://github.com/ADBeta/sqirt>\n\
-sqirt Version TODO    (c) ADBeta TODO month 2023\n";
-
+  -h\tShow this help message\n\
+\n\nSee the GitHub for more Information. <https://github.com/ADBeta/sqirt>\n\
+sqirt Version TODO    (c) ADBeta Nov 2023\n";
 
 const char *const out_of_range = "Value is out of range";
 const char *const invalid_num_str = "String is not a valid Numeric String";
