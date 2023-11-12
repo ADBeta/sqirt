@@ -25,6 +25,7 @@ static size_t _defined_arg_count       = 0;
 static size_t _undefined_arg_count     = 0;
 
 /*** Functions ****************************************************************/
+//TODO fix this
 char *strclamerr(ClamError_e err)
 {
 	

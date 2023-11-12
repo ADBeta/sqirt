@@ -8,8 +8,13 @@ x86
 OpenWRT_MIPSEL
 
 
+
+To pass a string with a newline (`\r\n`) you can either use `-nl` as an argument
+or use Linux/Bash escaping, `-m $'Hello World\r\n'`
+
 ## TODO
 * Add parity, hardware/software control stop bits and break flags
+* add a "file in" (-fi) flag to write the content of a file to the serial port
 
 ----
 <b> 2023 ADBeta </b>  

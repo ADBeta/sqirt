@@ -24,9 +24,12 @@ int Ser_OpenDevice(const char *filename, SerialDevice *);
 int Ser_CloseDevice(SerialDevice *dev);
 
 //Write a buffer [buf] of length [len] to a Serial Device,
+//Returns errno (=0 if ok)
 int Ser_WriteBuffer(const char *buf, const size_t len, SerialDevice *);
+
 //Read a buffer [buf] from a Serial Device of length [len]
-int Ser_ReadBuffer(char *buf, const size_t len, SerialDevice *);
+//Returns bytes read, is this is -1, an error occured. See errno
+ssize_t Ser_ReadBuffer(char *buf, const size_t len, SerialDevice *);
 
 /*** Serial Setings & variable handling ***************************************/
 //Manually set or get the termios variables

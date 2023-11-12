@@ -1,13 +1,26 @@
 /*******************************************************************************
-* This file is part of sqrt: Serial Query Response Tool
+* This file is part of sqirt: Serial Query Response Tool TODO
 * A simple program to send a request to a Serial Device, and return the response
 * string back to the user
 * Specifically designed for desktop and embedded environments
 *
-* See the GitHub for more information:
+* See the GitHub for more information: https://github.com/ADBeta/sqirt
 *
-* ADBeta (c)    Version 0.4.2    11 Nov 2023
+* ADBeta (c)    Version 0.5.1    12 Nov 2023
 *******************************************************************************/
+//Which sleep method to use: usleep (outdated) or nanosleep
+//#define SLEEP_MODE_USLEEP
+#define SLEEP_MODE_NANOSLEEP
+
+#if defined(SLEEP_MODE_USLEEP) && defined(SLEEP_MODE_NANOSLEEP)
+#error You must not have both usleep and nanosleep methods active at once
+#endif
+
+/******************************************************************************/
+#ifdef SLEEP_MODE_NANOSLEEP
+#include <time.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -20,33 +33,37 @@
 #define ARG_COUNT 10
 
 /*** String definitions *******************************************************/
-const char *const help_prompt_str = "Try 'sqrt -h' for more information.";
+const char *const help_prompt_str = "Try 'sqirt -h' for more information.";
 const char *const help_str = "\
-sqrt\tSerial Query Response Tool \n\
+sqirt\tSerial Query I Response Tool \n\
 Sends a message to a Serial PORT, then echos its reponse to stdout\n\n\
-Basic Usage: sqrt -p [port] -m [message] [OPTIONAL]\n\
-Example: sqrt -p /dev/ttyUSB0 -m \"Hello World!\"\n\n\
+Basic Usage: sqirt -p [port] -m [message] [OPTIONAL]\n\
+Example: sqirt -p /dev/ttyUSB0 -m \"Hello World!\" -nl\n\n\
 Arguments:\n\
   -p\tWhich PORT to communicate with (REQUIRED)\n\
   -m\tMessage to send to PORT. Use \"\" for messages with spaces or \'\' for special characters (REQUIRED)\n\
 \n\
   -br\tBaudrate to use. Valid Options: 2400, 4800, 9600, 19200, 38400, 115200 (Default: 115200)\n\
   -wt\tHow long to wait before writing to PORT (0.1 sec increments. Some devices reset when PORT is opened. Valid Options: 0-1000) (Default: 0)\n\
-  -to\tTimeout for the PORT to respond. Valid Options: 0-255 (0.1 sec increments) (Default: 10)\n\
+  -to\tTimeout for the PORT to respond. Valid Options: 0-255 (0.1 sec increments) (Default: 5)\n\
   -bl\tBit Length the PORT uses to communicate. Valid Options: 5, 6, 7, 8 (Default: 8)\n\
   -bs\tBuffer Size of the response string (Default: 256)\n\
 \nFlags:\n\
   -nl\tAppends NewLine (\"\\r\\n\") to the message automatically\n\
-  -sl\tOnly capture a Single Line from the PORT during the response\n\
   -h\tShow this help message\
-\n\nSee the GitHub for More Information and bug fixes <https://github.com/ADBeta/sqrt>\n\
-sqrt Version TODO    (c) ADBeta TODO month 2023\n";
+\n\nSee the GitHub for More Information and bug fixes <https://github.com/ADBeta/sqirt>\n\
+sqirt Version TODO    (c) ADBeta TODO month 2023\n";
 
 
 const char *const out_of_range = "Value is out of range";
 const char *const invalid_num_str = "String is not a valid Numeric String";
 
 /*** Function pre-declarations ************************************************/
+//Wait for a specified amount of Increments (0.1 seconds)
+//An old usleep implimentation and a newer nanosleep version are included for
+//devices that lack nanosleep.
+void WaitIncrement(const size_t inc);
+
 //Takes a clam_arg string and pointer to a long; sets the ptr to the numeric 
 //value of the string. Returns int error codes:
 //0    No Error
@@ -64,7 +81,7 @@ int main(int argc, char *argv[])
 	/*** Serial Device User Configurable Parameter Pre-definition *************/
 	unsigned int conf_baud = B115200;
 	unsigned int conf_wait = 0;
-	uint8_t conf_timeout = 10;
+	uint8_t conf_timeout = 5;
 	unsigned int conf_bitlength = CS8;
 	size_t conf_buffersize = 256;
 	
@@ -83,8 +100,7 @@ int main(int argc, char *argv[])
 	ArgDef_t *baud_ptr = Clam_AddDefinition(CLAM_TSTRING, "-br");
 	ArgDef_t *wait_ptr = Clam_AddDefinition(CLAM_TSTRING, "-wt");
 	ArgDef_t *time_ptr = Clam_AddDefinition(CLAM_TSTRING, "-to");
-	
-	
+	ArgDef_t *bits_ptr = Clam_AddDefinition(CLAM_TSTRING, "-bl");
 	ArgDef_t *buff_ptr = Clam_AddDefinition(CLAM_TSTRING, "-bs");
 	
 	//Arguments that set a detected flag
@@ -129,14 +145,38 @@ int main(int argc, char *argv[])
 	//Badrate
 	if(baud_ptr->detected)
 	{
-		//Check input matches specific supported values
+		long strval = 0;
+		int ret = GetNumericLimitedFromArg(baud_ptr->arg_str, &strval, 115200);
 		
-		
-		
-		//If not, print an error message and eixt
-		fprintf(stderr, "Error: Baudrate given is not valid\n%s\n", 
-		                 help_prompt_str);
-		exit(EXIT_FAILURE);
+		if(ret == -1) PrintErrorAndExit("Baudarate", 
+		                                 invalid_num_str, baud_ptr->arg_str);
+	
+		//Check input matches supported Baudrate values
+		switch(strval)
+		{
+			case 2400:
+				conf_baud = B2400;
+				break;
+			case 4800:
+				conf_baud = B4800;
+				break;
+			case 9600:
+				conf_baud = B9600;
+				break;
+			case 19200:
+				conf_baud = B19200;
+				break;
+			case 38400:
+				conf_baud = B38400;
+				break;
+			case 115200:
+				conf_baud = B115200;
+				break;
+			
+			default:
+				PrintErrorAndExit("Baudarate", "Not a valid Baudrate", 
+				                   baud_ptr->arg_str);
+		}
 	}
 	
 	//Wait time
@@ -179,15 +219,42 @@ int main(int argc, char *argv[])
 		conf_timeout = (uint8_t)strval;
 	}
 	
-	
 	//Bit Length
+	if(bits_ptr->detected)
+	{
+		long strval = 0;
+		int ret = GetNumericLimitedFromArg(bits_ptr->arg_str, &strval, 8);
+		
+		if(ret == -1) PrintErrorAndExit("Bit Length", 
+		                                 invalid_num_str, bits_ptr->arg_str);
+	
+		//Check input matches supported Baudrate values
+		switch(strval)
+		{
+			case 5:
+				conf_bitlength = CS5;
+				break;
+			case 6:
+				conf_bitlength = CS6;
+				break;
+			case 7:
+				conf_bitlength = CS7;
+				break;
+			case 8:
+				conf_bitlength = CS8;
+				break;
+			default:
+				PrintErrorAndExit("Bit Length", "Not a valid Bit Length", 
+				                   bits_ptr->arg_str);
+		}
+	}
 	
 	//Buffer Size
 	if(buff_ptr->detected)
 	{
 		long strval = 0;
 		const char *arg = buff_ptr->arg_str;
-		int ret = GetNumericLimitedFromArg(arg, &strval, 255);
+		int ret = GetNumericLimitedFromArg(arg, &strval, 1<<16); //64KiB
 		
 		//If any error has occured, print a message and exit (also check if 
 		//value is negative)
@@ -233,42 +300,75 @@ int main(int argc, char *argv[])
 	Ser_SetBits(conf_bitlength, &dev);
 	Ser_SetVtime(conf_timeout, &dev);
 	
-	//Adaptive wait for the device to be ready
-	//TODO
-	printf("Waiting for %i\n", conf_wait);
-	
-	sleep(2);
+	//Wait for an amount of time specified by Wait Time
+	WaitIncrement(conf_wait);
 	
 	/*** Write/Read from the Serial Device ************************************/
-	//Write the message given to the PORT. Append newline if -nl is detected
-	//TODO check err state, auto redirect on !0 maybe 
+	//Write the message given to the PORT. Append newline if -nl is detected	
 	ser_err = Ser_WriteBuffer(mesg_ptr->arg_str, strlen(mesg_ptr->arg_str), &dev);
 	if(nlin_ptr->detected) Ser_WriteBuffer("\r\n", 2, &dev);
 	
+	if(ser_err != 0)
+	{
+		PrintErrorAndExit("Cannot Write to Port", strerror(ser_err),
+		                   port_ptr->arg_str);
+	}
+	
 	//TODO wait for serial to finish writing & end device to catch up with life
-	sleep(1);
+	WaitIncrement(conf_timeout);
 	
 	
 	
-	
-	char read_buffer[conf_buffersize];	
-	
-	//TODO
-	Ser_ReadBuffer(read_buffer, conf_buffersize, &dev);
+	//Read the response from the Serial Port into a buffer of specified size
+	char resp_buffer[conf_buffersize];
 	
 	
+	//Read from the PORT into the buffer, always leave the last char free for \0
+	ssize_t byte_count = Ser_ReadBuffer(resp_buffer, conf_buffersize - 1, &dev);
+	//TODO error on -1
 	
-	printf("%s", read_buffer);
+	printf("Read %li bytes\n", byte_count);
+	
+	
+	//TODO set the char after last read from PORT to \0 to get a clean string
+	
+	printf("%s", resp_buffer);
 
-	//TODO put this in a catch block for signals
-	Ser_CloseDevice(&dev);
-	
+	//Done
+	Ser_CloseDevice(&dev);	
 	return 0;
 }
 
-
-
 /*** Function Definitions *****************************************************/
+void WaitIncrement(const size_t inc)
+{
+	static size_t last_inc = 0;
+	
+	//(obsolute) usleep implimentation for old/badly supported devices (Onion)
+	#ifdef SLEEP_MODE_USLEEP
+	static useconds_t usec = 0;
+	if(inc != last_inc)
+	{
+		usec = (useconds_t)inc * 100000;
+		last_inc = inc;
+	}
+	usleep(usec);
+	#endif
+	
+	//nanosleep implimentation for modern systems (recommended)
+	#ifdef SLEEP_MODE_NANOSLEEP
+	static struct timespec time, rem;
+	if(inc != last_inc)
+	{
+		//Split seconds and nanoseconds
+		time.tv_sec = (long)inc / 10;
+		time.tv_nsec = ((long)inc % 10) * 100000000;
+		last_inc = inc;
+	}
+	nanosleep(&time, &rem);
+	#endif
+}
+
 int GetNumericLimitedFromArg(const char *str, long *val, const long limit)
 {
 	//Check String is valid numeric

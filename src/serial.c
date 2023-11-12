@@ -41,10 +41,10 @@ int Ser_WriteBuffer(const char *buff, const size_t len, SerialDevice *dev)
 	return errno;
 }
 
-int Ser_ReadBuffer(char *buff, const size_t len, SerialDevice *dev)
+ssize_t Ser_ReadBuffer(char *buff, const size_t len, SerialDevice *dev)
 {
-	read(dev->filedesc, buff, len);
-	return errno;
+	//Returns number of bytes read, if -1 then error occured. see errno
+	return read(dev->filedesc, buff, len);
 }
 
 /*** Serial Setings & variable handling ***************************************/
