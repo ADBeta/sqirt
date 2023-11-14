@@ -16,7 +16,7 @@ CC := gcc
 
 #Flags
 CPPFLAGS := -Iinclude
-CFLAGS   := -O1 -Wall -Wextra -Wsign-conversion -Wmissing-declarations -Wconversion -Wshadow -Wlogical-op -Waggregate-return -Wfloat-equal -Wsuggest-attribute=const -Wunused -Wuninitialized -Wformat -Wunused-result -Wtype-limits
+CFLAGS   := -O1 -Wall -Wextra -Wsign-conversion -Wmissing-declarations -Wconversion -Wshadow -Wlogical-op -Waggregate-return -Wfloat-equal -Wunused -Wuninitialized -Wformat -Wunused-result -Wtype-limits
 #LDFLAGS  := -Llib
 LDLIBS   := -lm #/usr/lib/ 
 

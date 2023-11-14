@@ -5,11 +5,14 @@
 *
 * Please see the GitHub for more information:
 *
-* (c) ADBeta 2023    Version 1.3.2    05 Nov 2023
+* (c) ADBeta 2023    Version 1.5.5    14 Nov 2023
 *******************************************************************************/
 #include "args.h"
 
+#ifdef CONF_VERBOSE
 #include <stdio.h>
+#endif
+
 #include <errno.h>
 #include <string.h>
 #include <stdbool.h>
@@ -17,21 +20,42 @@
 #include <stdlib.h>
 
 ClamError_e clamerr = CLAM_ENONE;
-
 static ArgDef_t *_defined_arg_arr      = NULL;
 static const char **_undefined_arg_arr = NULL;
-
 static size_t _defined_arg_count       = 0;
 static size_t _undefined_arg_count     = 0;
 
+/*** Predefined Error Strings *************************************************/
+const char *const _clam_str_emaxdefs = "Reached maximum index of Defined Args";
+const char *const _clam_str_emaxundefs = "Reached maximum index of Undefined Args";
+const char *const _clam_str_enodefmem = "No  Memory has been allocated for defined args";
+const char *const _clam_str_eunknownarg = "Unknown Argument";
+const char *const _clam_str_enosubstr = "Argument requires a substring";
+const char *const _clam_str_enomatch = "No Matching Argument found during search";
+
 /*** Functions ****************************************************************/
-//TODO fix this
-char *strclamerr(ClamError_e err)
-{
+const char *strclamerr(const ClamError_e err)
+{	
+	switch(err)
+	{
+		case CLAM_ENONE:
+			return NULL;
+		case CLAM_EMAXDEFS:
+			return _clam_str_emaxdefs;
+		case CLAM_EMAXUNDEFS:
+			return _clam_str_emaxundefs;
+		case CLAM_ENODEFMEM:
+			return _clam_str_enodefmem;
+		case CLAM_EUNKNOWNARG:
+			return _clam_str_eunknownarg;	
+		case CLAM_ENOSUBSTR:
+			return _clam_str_enosubstr;
+		case CLAM_ENOMATCH:
+			return _clam_str_enomatch;
+	}
 	
-	if(err == CLAM_ENONE) return "hello";
-	
-	return "world";
+	//If nothing has matched yet, return generic "unknown error" message
+	return "Unknown error type";
 }
 
 void Clam_InitDefinedArray(ArgDef_t *def_arr, const size_t def_count)
@@ -67,7 +91,7 @@ ArgDef_t *Clam_AddDefinition(const ArgType_e type, const char *flag)
 	
 	//If too many args have been added, exit with failure
 	if(crnt_indx >= _defined_arg_count) {
-		clamerr = CLAM_EMAXINDEX;
+		clamerr = CLAM_EMAXDEFS;
 		return NULL;
 	}
 	
@@ -82,18 +106,22 @@ ArgDef_t *Clam_AddDefinition(const ArgType_e type, const char *flag)
 }
 
 //Private function for library only
-static int Clam_AddUndefined(const char *ptr)
+static const char *Clam_AddUndefined(const char *ptr)
 {
 	static size_t crnt_indx = 0;
 
 	//If too many strings have been added, exit with failure
-	if(crnt_indx >= _undefined_arg_count) return CLAM_EMAXINDEX;
+	if(crnt_indx >= _undefined_arg_count)
+	{
+		clamerr = CLAM_EMAXUNDEFS;
+		return NULL;
+	}
 	
 	_undefined_arg_arr[crnt_indx] = ptr;
 	++crnt_indx;
 	
 	clamerr = CLAM_ENONE;
-	return 0;
+	return ptr;
 }
 
 int Clam_ScanArgs(int argc, char *argv[]) 
@@ -132,7 +160,10 @@ int Clam_ScanArgs(int argc, char *argv[])
 						printf("Cannot find substring: end of inputs\n");
 						#endif
 						clamerr = CLAM_ENOSUBSTR;
-						return -3;
+						
+						//NOTE Because argi was already incrimented, this is the
+						//correct index to map to argv[]
+						return argi;
 					}
 					
 					def_obj->arg_str = argv[argi];
@@ -142,13 +173,12 @@ int Clam_ScanArgs(int argc, char *argv[])
 				printf("Found match for \"%s\". arg_str = %s\n", 
 				       args, def_obj->arg_str);				
 				#endif
-				
 				break;
 			}
 		}
 		
 		//If no match was found, either put it in the undefined array, or
-		//return an error if the undefined array was not initialised 
+		//return the position of the unknown arg.
 		if(!match_found)
 		{
 			#ifdef CONF_VERBOSE
@@ -158,11 +188,11 @@ int Clam_ScanArgs(int argc, char *argv[])
 			if(_undefined_arg_arr == NULL)
 			{
 				clamerr = CLAM_EUNKNOWNARG;
-				return -2;
+				return argi + 1;
 			} else 
 			{
-				//TODO check return
-				Clam_AddUndefined(args);
+				const char *ret = Clam_AddUndefined(args);
+				if(ret == NULL) return -2;
 			}
 		}		 
 	}

@@ -6,7 +6,7 @@
 *
 * See the GitHub for more information: https://github.com/ADBeta/sqirt
 *
-* ADBeta (c)    Version 1.0.0   12 Nov 2023
+* ADBeta (c)    Version 1.1.2   14 Nov 2023
 *******************************************************************************/
 //Which sleep method to use: usleep (outdated) or nanosleep
 //#define SLEEP_MODE_USLEEP
@@ -35,9 +35,9 @@
 ///TODO Add file input thingy
 
 /*** String definitions *******************************************************/
-const char *const help_prompt_str = "Try 'sqirt -h' for more information."; //TODO
+const char *const help_prompt_str = "Try 'sqirt -h' for more information.";
 const char *const help_str = "\
-sqirt\tSerial Query I Response Tool \n\
+sqirt\tSerial Query Interface Response Tool \n\
 Sends a message to a Serial PORT, then echos its reponse to stdout\n\n\
 Basic Usage: sqirt -p [port] -m [message] [OPTIONAL]\n\
 Example: sqirt -p /dev/ttyUSB0 -m \"Hello World!\" -nl\n\n\
@@ -56,7 +56,7 @@ Arguments:\n\
   -nl\tAppends NewLine (\"\\r\\n\") to the message automatically\n\
   -h\tShow this help message\n\
 \n\nSee the GitHub for more Information. <https://github.com/ADBeta/sqirt>\n\
-sqirt Version TODO    (c) ADBeta Nov 2023\n";
+sqirt Version TODO    (c) ADBeta Nov 2023\n"; //TODO
 
 const char *const out_of_range = "Value is out of range:";
 const char *const invalid_num_str = "String is not a valid Numeric String:";
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 	/*** Initialise the Argument Array ****************************************/
 	ArgDef_t def_args[ARG_COUNT];
 	Clam_InitDefinedArray(def_args, ARG_COUNT);
-	
+		
 	/*** Define arguments and Scan Arguments **********************************/
 	//Help Message Special Case
 	ArgDef_t *help_ptr = Clam_AddDefinition(CLAM_TFLAG, "-h");
@@ -120,14 +120,12 @@ int main(int argc, char *argv[])
 	}
 	
 	//Scan Arguments and check for errors
-	Clam_ScanArgs(argc-1, argv+1);
-	if(clamerr != CLAM_ENONE)
+	int errval = Clam_ScanArgs(argc-1, argv+1);
+	if(errval != 0)
 	{
-		fprintf(stderr, "Error while parsing arguments: %i:\n", (int)clamerr);
-		exit(EXIT_FAILURE);
-		//TODO handle errors. print msg and leave
+		PrintErrorAndExit(strclamerr(clamerr), argv[errval], "");
 	}
-		
+	
 	/*** If help was requested, print the help message ************************/
 	if(help_ptr->detected)
 	{

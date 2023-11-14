@@ -7,9 +7,6 @@
 *
 * (c) ADBeta 2023
 
-
-
-
 Example defining both arrays TODO
 ArgDef_t def_args[ARG_COUNT];
 const char *undef_args[ARG_COUNT];
@@ -23,13 +20,13 @@ Clam_InitUndefinedArray(undef_args, ARG_COUNT);
 #define CLAM_T
 
 /*** Configuration Compile-time flags *****************************************/
-//#define CONF_ENABLE_PRINTF
 //#define CONF_VERBOSE
 
 //Global error code
 typedef enum {
 	CLAM_ENONE = 0,
-	CLAM_EMAXINDEX,       //No indexes left in argument array
+	CLAM_EMAXDEFS,        //No indexes left in defined argument array
+	CLAM_EMAXUNDEFS,       //No indexes left in undefined argument array
 	CLAM_ENODEFMEM,       //No memory has been allocated for defined args
 	CLAM_EUNKNOWNARG,     //Passed argument is unknown/unrecognised
 	CLAM_ENOSUBSTR,       //No substring exists for the current arg
@@ -52,7 +49,7 @@ typedef struct
 } ArgDef_t;
 
 //Returns a string based on the value of clamerr
-char *strclamerr(ClamError_e err);
+const char *strclamerr(const ClamError_e err);
 
 //Initialises the defined argument array from passed char array
 void Clam_InitDefinedArray(ArgDef_t *def_arr, const size_t def_count);
@@ -62,8 +59,9 @@ void Clam_InitUndefinedArray(const char **undef_arr, const size_t undef_count);
 ArgDef_t *Clam_AddDefinition(const ArgType_e type, const char *flag);
 
 //Scan all args passed to the program.
-//Returns negative values on library errors
-//Returns positive values on argument errors, indexed to fault argument
+//Returns the argument index that caused the error (+1 to align it to the actual
+//argv array)
+//Returns -1 if no memory was allocated
 //Returns 0 for no fault
 //Sets clamerr to a CLAM_E Error
 int Clam_ScanArgs(int argc, char *argv[]);
