@@ -13,6 +13,8 @@ Standard RS232/Serial hardware controls are available, such as Baudrate `-br`,
 Bit Length `-bl`, and Timeout `-to`. To add to this I have built in the 
 following controls:
 
+To adjust the received string buffer size, use `-bs` to change the buffer size.
+
 To pass a string with a newline (`\r\n`) you can either use `-nl` as an argument
 or use Unix Shell escaping, `-m $'Hello World\r\n'`  
 

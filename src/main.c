@@ -6,7 +6,7 @@
 *
 * See the GitHub for more information: https://github.com/ADBeta/sqirt
 *
-* ADBeta (c)    Version 1.1.2   14 Nov 2023
+* ADBeta (c)    Version 1.1.4   14 Nov 2023
 *******************************************************************************/
 //Which sleep method to use: usleep (outdated) or nanosleep
 //#define SLEEP_MODE_USLEEP
@@ -114,9 +114,8 @@ int main(int argc, char *argv[])
 	//Check the clamerr value to ensure all definitions were added
 	if(clamerr != CLAM_ENONE)
 	{
-		//TODO
-		fprintf(stderr, "Error while adding Definitions: %i:\n", (int)clamerr);
-		exit(EXIT_FAILURE);
+		PrintErrorAndExit("While Adding Arg Definition:", "", 
+		                   strclamerr(clamerr));
 	}
 	
 	//Scan Arguments and check for errors
@@ -350,8 +349,6 @@ int main(int argc, char *argv[])
 		PrintErrorAndExit("Cannot Read from Port:", port_ptr->arg_str,
 			strerror(ser_err));
 	}
-	
-	printf("Read %li bytes\n", byte_count); //TODO
 		
 	//Implant a '\0' into the string so further operations can be done.
 	//If the chars read is less than the buffer, add it one past the string end
