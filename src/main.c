@@ -6,7 +6,7 @@
 *
 * See the GitHub for more information: https://github.com/ADBeta/sqirt
 *
-* ADBeta (c)    Version 1.1.4   14 Nov 2023
+* ADBeta (c)    Version 1.5.2   18 Nov 2023
 *******************************************************************************/
 //Which sleep method to use: usleep (outdated) or nanosleep
 //#define SLEEP_MODE_USLEEP
@@ -32,8 +32,6 @@
 
 #define ARG_COUNT 10
 
-///TODO Add file input thingy
-
 /*** String definitions *******************************************************/
 const char *const help_prompt_str = "Try 'sqirt -h' for more information.";
 const char *const help_str = "\
@@ -51,15 +49,14 @@ Arguments:\n\
   -to\tTimeout for the PORT to respond. Valid Options: 0-255 (0.1 sec increments) (Default: 5)\n\
   -bl\tBit Length of the PORT. Valid Options: 5, 6, 7, 8 (Default: 8)\n\
   -bs\tBuffer Size of the response string (Default: 256)\n\
-  -fi\nTransmit a file instead of a message (TODO)\n\
 \nFlags:\n\
   -nl\tAppends NewLine (\"\\r\\n\") to the message automatically\n\
   -h\tShow this help message\n\
 \n\nSee the GitHub for more Information. <https://github.com/ADBeta/sqirt>\n\
-sqirt Version TODO    (c) ADBeta Nov 2023\n"; //TODO
+sqirt Version 1.4.1   (c) ADBeta Nov 2023\n";
 
-const char *const out_of_range = "Value is out of range:";
-const char *const invalid_num_str = "String is not a valid Numeric String:";
+const char *const out_of_range = "Value Out of Range:";
+const char *const invalid_num_str = "Not a Valid Numeric String:";
 
 /*** Function pre-declarations ************************************************/
 //Wait for a specified amount of Increments (0.1 seconds)
@@ -147,10 +144,12 @@ int main(int argc, char *argv[])
 	//Badrate
 	if(baud_ptr->detected)
 	{
+		const char* const flag_name = "Baudrate";
+	
 		long strval = 0;
 		int ret = GetNumericLimitedFromArg(baud_ptr->arg_str, &strval, 115200);
 		
-		if(ret == -1) PrintErrorAndExit("Baudrate", baud_ptr->arg_str,
+		if(ret == -1) PrintErrorAndExit(flag_name, baud_ptr->arg_str,
 		                                 invalid_num_str);
 	
 		//Check input matches supported Baudrate values
@@ -176,7 +175,7 @@ int main(int argc, char *argv[])
 				break;
 			
 			default:
-				PrintErrorAndExit("Baudrate", baud_ptr->arg_str, 
+				PrintErrorAndExit(flag_name, baud_ptr->arg_str, 
 				"Not a valid Baudrate");
 		}
 	}
@@ -184,6 +183,8 @@ int main(int argc, char *argv[])
 	//Transmit Delay
 	if(tdel_ptr->detected)
 	{
+		const char* const flag_name = "TX Delay";
+	
 		long strval = 0;
 		const char *arg = tdel_ptr->arg_str;
 		int ret = GetNumericLimitedFromArg(arg, &strval, 1000);
@@ -193,8 +194,8 @@ int main(int argc, char *argv[])
 		if(strval < 0) ret = -2;
 		if(ret != 0)
 		{
-			if(ret == -1) PrintErrorAndExit("TX Delay", arg, invalid_num_str);
-			if(ret == -2) PrintErrorAndExit("TX Delay", arg, out_of_range);
+			if(ret == -1) PrintErrorAndExit(flag_name, arg, invalid_num_str);
+			if(ret == -2) PrintErrorAndExit(flag_name, arg, out_of_range);
 		}
 		
 		//Otherwsie set the configuration value. Cast to unsigned int
@@ -204,6 +205,8 @@ int main(int argc, char *argv[])
 	//Receive Delay
 	if(rdel_ptr->detected)
 	{
+		const char* const flag_name = "RX Delay";
+	
 		long strval = 0;
 		const char *arg = rdel_ptr->arg_str;
 		int ret = GetNumericLimitedFromArg(arg, &strval, 1000);
@@ -213,8 +216,8 @@ int main(int argc, char *argv[])
 		if(strval < 0) ret = -2;
 		if(ret != 0)
 		{
-			if(ret == -1) PrintErrorAndExit("RX Delay", arg, invalid_num_str);
-			if(ret == -2) PrintErrorAndExit("RX Delay", arg, out_of_range);
+			if(ret == -1) PrintErrorAndExit(flag_name, arg, invalid_num_str);
+			if(ret == -2) PrintErrorAndExit(flag_name, arg, out_of_range);
 		}
 		
 		//Otherwsie set the configuration value. Cast to unsigned int
@@ -224,6 +227,8 @@ int main(int argc, char *argv[])
 	//Timeout
 	if(time_ptr->detected)
 	{
+		const char* const flag_name = "Timeout";
+	
 		long strval = 0;
 		const char *arg = time_ptr->arg_str;
 		int ret = GetNumericLimitedFromArg(arg, &strval, 255);
@@ -233,8 +238,8 @@ int main(int argc, char *argv[])
 		if(strval < 0) ret = -2;
 		if(ret != 0)
 		{
-			if(ret == -1) PrintErrorAndExit("Timeout", arg, invalid_num_str);
-			if(ret == -2) PrintErrorAndExit("Timeout", arg, out_of_range);
+			if(ret == -1) PrintErrorAndExit(flag_name, arg, invalid_num_str);
+			if(ret == -2) PrintErrorAndExit(flag_name, arg, out_of_range);
 		}
 		
 		//Otherwsie set the configuration value. Cast to uint8_t
@@ -266,29 +271,30 @@ int main(int argc, char *argv[])
 				conf_bitlength = CS8;
 				break;
 			default:
-				PrintErrorAndExit("Bit Length", bits_ptr->arg_str, 
-				                  "Not a valid Bit Length");
+				PrintErrorAndExit("Not a Valid Bit Length", bits_ptr->arg_str, "");
 		}
 	}
 	
 	//Buffer Size
 	if(buff_ptr->detected)
 	{
+		const char* const flag_name = "Buffer Size";
+	
 		long strval = 0;
 		const char *arg = buff_ptr->arg_str;
-		int ret = GetNumericLimitedFromArg(arg, &strval, 1<<16); //64KiB
+		int ret = GetNumericLimitedFromArg(arg, &strval, (1<<16)); //64KiB
 		
 		//If any error has occured, print a message and exit (also check if 
 		//value is negative)
 		if(strval < 0) ret = -2;
 		if(ret != 0)
 		{
-			if(ret == -1) PrintErrorAndExit("Buffer Size", arg, invalid_num_str);
-			if(ret == -2) PrintErrorAndExit("Buffer Size", arg, out_of_range);
+			if(ret == -1) PrintErrorAndExit(flag_name, arg, invalid_num_str);
+			if(ret == -2) PrintErrorAndExit(flag_name, arg, out_of_range);
 		}
 		
 		//Otherwsie set the configuration value. Cast to uint8_t
-		conf_buffersize = (uint8_t)strval;
+		conf_buffersize = (size_t)strval;
 	}
 	
 	/*** Communicate with Termios library *************************************/
@@ -342,6 +348,7 @@ int main(int argc, char *argv[])
 	
 	//Read the response from the Serial Port into a buffer of specified size
 	char resp_buffer[conf_buffersize];
+	
 	//Read from the PORT into the buffer
 	ssize_t byte_count = Ser_ReadBuffer(resp_buffer, conf_buffersize, &dev);
 	if(byte_count < 0)
@@ -349,11 +356,11 @@ int main(int argc, char *argv[])
 		PrintErrorAndExit("Cannot Read from Port:", port_ptr->arg_str,
 			strerror(ser_err));
 	}
-		
+	
 	//Implant a '\0' into the string so further operations can be done.
 	//If the chars read is less than the buffer, add it one past the string end
 	//If the string has filled the buffer, put it at the last char of the buffer
-	if(byte_count < (ssize_t)conf_buffersize)
+	if(byte_count <= (ssize_t)conf_buffersize)
 	{
 		resp_buffer[byte_count] = '\0';
 	} else 
@@ -362,7 +369,7 @@ int main(int argc, char *argv[])
 	}
 	
 	//Print the buffer received to stdout
-	fprintf(stdout, "%s", resp_buffer);
+	fprintf(stdout, "%s\n", resp_buffer);
 
 	//Done
 	Ser_CloseDevice(&dev);	

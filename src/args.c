@@ -5,7 +5,7 @@
 *
 * Please see the GitHub for more information:
 *
-* (c) ADBeta 2023    Version 1.5.5    14 Nov 2023
+* (c) ADBeta 2023    Version 1.6.8    16 Nov 2023
 *******************************************************************************/
 #include "args.h"
 
@@ -26,12 +26,12 @@ static size_t _defined_arg_count       = 0;
 static size_t _undefined_arg_count     = 0;
 
 /*** Predefined Error Strings *************************************************/
-const char *const _clam_str_emaxdefs = "Reached maximum index of Defined Args";
-const char *const _clam_str_emaxundefs = "Reached maximum index of Undefined Args";
-const char *const _clam_str_enodefmem = "No  Memory has been allocated for defined args";
+const char *const _clam_str_emaxdefs = "Reached Maximum Index of Defined Args";
+const char *const _clam_str_emaxundefs = "Reached Maximum Index of Undefined Args";
+const char *const _clam_str_enodefmem = "No  Memory Allocated for Defined Args";
 const char *const _clam_str_eunknownarg = "Unknown Argument";
-const char *const _clam_str_enosubstr = "Argument requires a substring";
-const char *const _clam_str_enomatch = "No Matching Argument found during search";
+const char *const _clam_str_enosubstr = "Argument Requires a Substring";
+const char *const _clam_str_enomatch = "No Matching Argument Found";
 
 /*** Functions ****************************************************************/
 const char *strclamerr(const ClamError_e err)
@@ -55,7 +55,7 @@ const char *strclamerr(const ClamError_e err)
 	}
 	
 	//If nothing has matched yet, return generic "unknown error" message
-	return "Unknown error type";
+	return "Unknown Error Type";
 }
 
 void Clam_InitDefinedArray(ArgDef_t *def_arr, const size_t def_count)

@@ -7,7 +7,6 @@ response from the serial device and prints it to the stdout stream.
 x86
 OpenWRT_MIPSel
 
-
 ## Usage
 Standard RS232/Serial hardware controls are available, such as Baudrate `-br`,
 Bit Length `-bl`, and Timeout `-to`. To add to this I have built in the 
